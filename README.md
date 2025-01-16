@@ -21,12 +21,12 @@ This tool completely removes Microsoft Edge from Windows and prevents its automa
 - `edge_uninstaller.ps1` - Main PowerShell script that performs the uninstallation
 - `edge_block.ps1` - PowerShell script that blocks the installation of Edge again by anyone other than the current user.
 - `edge_vanisher.ps1` Combine script of scripts above
-- `run_edge_uninstaller_admin.bat` - Batch file to run the combined script with admin privileges
+- `run_edge_vanisher.bat` - Batch file to run the combined script with admin privileges
 
 ## Usage
 
 1. Download all files to a folder
-2. Right-click `run_edge_uninstaller.bat`
+2. Right-click `run_edge_vanisher.bat`
 3. Select "Run as administrator"
 4. Wait for the process to complete
 5. Restart your computer when prompted
