@@ -122,5 +122,4 @@ New-Item -Path $edgeAppPath -ItemType Directory -Force | Out-Null
 
 Write-Host "Protective folders created and security settings configured." -ForegroundColor Green
 Write-Host "Please restart your computer." -ForegroundColor Yellow
-Write-Host "Press any key to exit..."
-$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+exit
