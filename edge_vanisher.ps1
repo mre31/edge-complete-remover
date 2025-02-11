@@ -1,37 +1,49 @@
 # Administrator rights check
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-    Write-Warning "This script must be run with administrator rights!"
+    Write-Host "This script must be run with administrator rights!" -ForegroundColor Red
     Break
 }
 
+Write-Host "Edge Vanisher started" -ForegroundColor Yellow
 Write-Host "Starting Microsoft Edge uninstallation process..." -ForegroundColor Yellow
 
 # Terminate Edge processes
 Write-Host "Terminating Edge processes..." -ForegroundColor Cyan
-Get-Process | Where-Object { $_.Name -like "*edge*" } | Stop-Process -Force -ErrorAction SilentlyContinue
-
-# Uninstall with Winget
-Write-Host "Uninstalling Edge with Winget..." -ForegroundColor Cyan
-Start-Process "winget" -ArgumentList "uninstall --id Microsoft.Edge" -Wait -ErrorAction SilentlyContinue
+$processes = Get-Process | Where-Object { $_.Name -like "*edge*" }
+if ($processes) {
+    $processes | ForEach-Object {
+        Write-Host "Terminated process: $($_.Name) (PID: $($_.Id))" -ForegroundColor Cyan
+    }
+    $processes | Stop-Process -Force -ErrorAction SilentlyContinue
+} else {
+    Write-Host "No running Edge processes found." -ForegroundColor Cyan
+}
 
 # Uninstall Edge with setup.exe
-Write-Host "Uninstalling Microsoft Edge with setup..." -ForegroundColor Cyan
+Write-Host "Uninstalling Edge with setup..." -ForegroundColor Cyan
 $edgePath = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\*\Installer\setup.exe"
 if (Test-Path $edgePath) {
     Start-Process -FilePath $(Resolve-Path $edgePath) -ArgumentList "--uninstall --system-level --verbose-logging --force-uninstall" -Wait
 }
 
-# Remove UWP Edge apps
-Write-Host "Removing UWP Edge applications..." -ForegroundColor Cyan
-$edgeApps = @(
-    "Microsoft.MicrosoftEdge",
-    "Microsoft.MicrosoftEdgeDevToolsClient"
+# Remove Start Menu shortcuts
+Write-Host "Removing Start Menu shortcuts..." -ForegroundColor Cyan
+$startMenuPaths = @(
+    "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk",
+    "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk",
+    "$env:ALLUSERSPROFILE\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk"
 )
 
-foreach ($app in $edgeApps) {
-    Get-AppxPackage -Name "*$app*" -AllUsers | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue
-    Get-AppxPackage -Name "*$app*" | Remove-AppxPackage -ErrorAction SilentlyContinue
-    Get-AppxProvisionedPackage -Online | Where-Object DisplayName -like "*$app*" | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
+foreach ($path in $startMenuPaths) {
+    if (Test-Path $path) {
+        Write-Host "Deleting: $path" -ForegroundColor Cyan
+        Remove-Item -Path $path -Force -ErrorAction SilentlyContinue
+        if (!(Test-Path $path)) {
+            Write-Host "Successfully deleted: $path" -ForegroundColor Green
+        } else {
+            Write-Host "Failed to delete: $path" -ForegroundColor Red
+        }
+    }
 }
 
 # Clean Edge folders
@@ -78,6 +90,11 @@ foreach ($key in $edgeRegKeys) {
     if (Test-Path $key) {
         Write-Host "Deleting registry key: $key" -ForegroundColor Cyan
         Remove-Item -Path $key -Recurse -Force -ErrorAction SilentlyContinue
+        if (!(Test-Path $key)) {
+            Write-Host "Successfully deleted registry key: $key" -ForegroundColor Green
+        } else {
+            Write-Host "Failed to delete registry key: $key" -ForegroundColor Red
+        }
     }
 }
 
@@ -292,4 +309,3 @@ foreach ($folder in $protectiveFolders) {
 }
 
 Write-Host "Protective folders created and security settings configured for Edge and EdgeCore." -ForegroundColor Green
-exit
